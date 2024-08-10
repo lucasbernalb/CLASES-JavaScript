@@ -1,3 +1,28 @@
+async function renderProductos() {
+    const response = await fetch("json/productos.json");
+    const data = await response.json();
+
+    let contenidoHTML = "";
+
+    data.forEach(element => {
+        contenidoHTML += `<div class="col-md-3 my-4">
+        <div class="card border-1">
+            <a href="/producto.html" onclick="guardarProductoLS(${element.id});">
+                <img src="${element.imagen}" class="card-img-top"  alt="${element.nombre}">
+            </a>
+            <div class="card-body text-center">
+                <p class="card-text"><b>${element.nombre}</b><br><span class="text-danger">$${element.precio} UYU</span></p>
+                <p><button class="btn btn-danger rounded-2" onclick="agregarProductos(${element.id});">Agregar <i class="bi bi-cart-plus"></i></button></p>
+                <a href="carrito.html" <button class="btn btn-dark" onclick="">Carrito <i class="bi bi-cart2"></i></button></a>
+            </div>
+        </div>
+        </div>`;
+    }); 
+        
+    document.getElementById("productos").innerHTML = contenidoHTML;
+
+}
+
 const productos = [
     {id:1 , nombre:"Pesadillas Nocturnas", precio:2000, cantidad:1, imagen:"https://lucasbernalb.github.io/PreEntrega.Bernal/img/productos/cuadros/cuadro%20negro.jpg", categoria:"cuadros"},
     {id:2 , nombre:"Desurbanismo", precio:2500, cantidad:1, imagen:"https://lucasbernalb.github.io/PreEntrega.Bernal/img/productos/cuadros/desurbanismo.jpg", categoria:"cuadros"},
@@ -9,47 +34,25 @@ const productos = [
     {id:8 , nombre:"Parte del aire", precio:4000, cantidad:1, imagen:"https://lucasbernalb.github.io/PreEntrega.Bernal/img/productos/cuadros//parte%20del%20aire.jpg", categoria:"cuadros"},
 ]
 
-function renderProductos(productos) {
-    let contenidoHTML = "";
-
-    for(const producto of productos) {
-        contenidoHTML += `<div class="col-md-3 my-4">
-        <div class="card border-1 ">
-            <img src="${producto.imagen}" class="card-img-top  alt="${producto.nombre}">
-            <div class="card-body text-center"">
-                <p class="card-text">${producto.nombre}<br><span class="text-danger">$${producto.precio} UYU</span></p>
-                <p class="card-text"><button class="btn btn-danger rounded-2" onclick="agregarProductos(${producto.id});">Agregar (+)</button></p>
-            </div>
-        </div>
-        </div>`;
-    }
-
-    document.getElementById("productos").innerHTML = contenidoHTML;
-}
 
 function agregarProductos(id) {
-    const producto = productos.find(item => item.id == id);
     const carrito = cargarCarritoLocalS();
+    const produ = productos.find(producto => producto.id == id)
 
-    carrito.push(producto);
+    if (carrito.some(producto => producto.id == id)) {
+        carrito.map(producto => {
+            if (producto.id == id) {
+                return { 
+                    ...producto, cantidad: producto.cantidad++
+                }
+            }
+            return producto
+        })    
+    }
+    carrito.push(produ);
     guardarCarritoLS(carrito);
     renderBotonCarrito();
-    
-    if (carrito.some((item) => item.id == id)){
-        carrito = carrito.map((cantidadProductoCarrito) => {
-            if (cantidadProductoCarrito.id == id) {
-                return { ...cantidadProductoCarrito, cantidad: cantidadProductoCarrito.cantidad++}
-            }
-            return guardarCarritoLS(carrito);
-    
-        })
-    
     }
-
-    console.log(`El producto ${producto.nombre} se ha agregado correctamente!`);
-    }
-
-
 
 
 function renderBotonCarrito() {
@@ -88,6 +91,7 @@ function vaciarCarrito() {
     localStorage.removeItem("carrito");
     renderCarrito();
     renderBotonCarrito();
+    descuentoProductosCarrito();
     console.log("El carrito se ha vaciado correctamente"); 
 }
 
@@ -132,21 +136,36 @@ function guardarProductoLS(id) {
 }
 
 function notificacionValidar() {
-    Swal.fire({
-        title: "Su compra ha finalizado con éxito",
-        text: "Gracias por comprar en Reina Artura!",
-        icon: "success",
-        timer: 3000,
-        confirmButtonText: `OK`,
-        allowOutsideClick: `<a href="/index.html" class="text-white text-decoration-none">OK</a>`
-      });  
-      redireccionOut();
+    let precioFinal = sumarProductosCarrito();
+    if(precioFinal > 0){
+        Swal.fire({
+            title: "Su compra ha finalizado con éxito",
+            text: "Gracias por comprar en Reina Artura!",
+            icon: "success",
+            timer: 3000,
+            confirmButtonText: `OK`,
+            allowOutsideClick: `<a href="/index.html" class="text-white text-decoration-none">OK</a>`
+          }) 
+        }else if(precioFinal == 0){
+            Swal.fire({
+                title: "No tiene ningun producto en el carrito",
+                text: "Vuelve a la página principal para agregar productos.",
+                icon: "error",
+                timer: 3000,
+                confirmButtonText: `OK`,
+                allowOutsideClick: `<a href="/index.html" class="text-white text-decoration-none">OK</a>`
+            })
+        }
+        
+        redireccionOut()
+      vaciarCarrito();
+      descuentoProductosCarrito();
     }
 
 function redireccionOut() {
     setTimeout(() => {
     redireccion(); 
-}, 3000)
+}, 5000)
 }
 
     function redireccion() {
